@@ -1,6 +1,8 @@
 package main
 
 import (
+	"api/graphql"
+	"api/rest"
 	"flag"
 	"log"
 	"os"
@@ -20,12 +22,9 @@ func main() {
 
 	switch serverMode {
 	case "rest":
-		ServeRest()
+		rest.ServeRest()
 	case "graphql":
-		ServeGraphql()
-	case "all":
-		ServeRest()
-		ServeGraphql()
+		graphql.ServeGraphql()
 	default:
 		log.Printf("%s. is invalid mode. valid mode are: rest, graphql, all", serverMode)
 		os.Exit(1)
