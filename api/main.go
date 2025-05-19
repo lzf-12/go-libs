@@ -2,6 +2,7 @@ package main
 
 import (
 	"api/graphql"
+	"api/grpc"
 	"api/rest"
 	"flag"
 	"log"
@@ -12,7 +13,7 @@ import (
 
 func main() {
 
-	mode := flag.String("mode", "rest", "available mode: rest | graphql | all")
+	mode := flag.String("mode", "rest", "available mode: rest | graphql | grpc")
 	flag.Parse()
 
 	serverMode := strings.ToLower(*mode)
@@ -25,6 +26,8 @@ func main() {
 		rest.ServeRest()
 	case "graphql":
 		graphql.ServeGraphql()
+	case "grpc":
+		grpc.ServeGrpc()
 	default:
 		log.Printf("%s. is invalid mode. valid mode are: rest, graphql, all", serverMode)
 		os.Exit(1)
