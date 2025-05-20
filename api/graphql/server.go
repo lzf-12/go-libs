@@ -16,7 +16,7 @@ import (
 
 const defaultPort = "8080"
 
-func ServeGraphql() {
+func ServeGraphql() error {
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = defaultPort
@@ -39,5 +39,5 @@ func ServeGraphql() {
 	http.Handle("/query", srv)
 
 	log.Printf("connect to http://localhost:%s/ for GraphQL playground", port)
-	log.Fatal(http.ListenAndServe(":"+port, nil))
+	return http.ListenAndServe(":"+port, nil)
 }

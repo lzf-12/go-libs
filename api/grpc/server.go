@@ -27,7 +27,7 @@ func (s *server) SayHello(_ context.Context, in *pb.HelloRequest) (*pb.HelloResp
 	return &pb.HelloResponse{Message: "Hello " + in.GetName()}, nil
 }
 
-func ServeGrpc() {
+func ServeGrpc() error {
 	flag.Parse()
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", *port))
 	if err != nil {
@@ -36,7 +36,6 @@ func ServeGrpc() {
 	s := grpc.NewServer()
 	pb.RegisterHelloServiceServer(s, &server{})
 	log.Printf("server listening at %v", lis.Addr())
-	if err := s.Serve(lis); err != nil {
-		log.Fatalf("failed to serve: %v", err)
-	}
+
+	return s.Serve(lis)
 }

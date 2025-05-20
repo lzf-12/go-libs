@@ -5,28 +5,23 @@ import (
 	"net/http"
 )
 
-func ServeRest() {
-	// without framework
-	go func() {
-		http.HandleFunc("/resthttp", HandlerRestHttp())
+func ServeRestHttp() error {
 
-		log.Println("REST without framework running at :8080")
-		log.Fatal(http.ListenAndServe(":8080", nil))
-	}()
+	http.HandleFunc("/resthttp", HandlerRestHttp())
+	log.Println("REST without framework running at :8080")
+	return http.ListenAndServe(":8080", nil)
+}
 
-	// gin
-	go func() {
-		gin := InitGin()
-		gin.GET("/restgin", HandlerGin())
-		gin.Run(":8081")
+func ServeRestGin() error {
 
-	}()
+	gin := InitGin()
+	gin.GET("/restgin", HandlerGin())
+	return gin.Run(":8081")
+}
 
-	// fiber
-	go func() {
-		fiber := InitFiber()
-		fiber.Get("/restfiber", HandlerFiber())
-		fiber.Listen(":8082")
+func ServeRestFiber() error {
 
-	}()
+	fiber := InitFiber()
+	fiber.Get("/restfiber", HandlerFiber())
+	return fiber.Listen(":8082")
 }
