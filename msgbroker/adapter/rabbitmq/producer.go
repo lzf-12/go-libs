@@ -9,6 +9,11 @@ import (
 	"github.com/streadway/amqp"
 )
 
+type ProducerInt interface {
+	Publish(topic string, message []byte) error
+	PublishWithHeaders(topic string, message []byte, headers map[string]interface{}) error
+}
+
 type RabbitMQProducer struct {
 	conn    *amqp.Connection
 	channel *amqp.Channel
@@ -26,14 +31,6 @@ type ProducerCfg struct {
 	Headers       amqp.Table        // additional headers
 	RetryPolicy   retry.RetryPolicy // retry configuration when producer failed publish message
 	IsNeedConfirm bool              // default false
-}
-
-func NewRabbitMQBroker(opts RabbitMQOpts) (*RabbitMQBroker, error) {
-	conn, err := amqp.DialConfig(opts.AmqpString, opts.AmqpConfig)
-	if err != nil {
-		return nil, err
-	}
-	return &RabbitMQBroker{conn: conn}, nil
 }
 
 func (r *RabbitMQBroker) NewProducer(cfg ProducerCfg) (ProducerInt, error) {

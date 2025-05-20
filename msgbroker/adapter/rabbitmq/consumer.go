@@ -11,6 +11,11 @@ import (
 	"github.com/streadway/amqp"
 )
 
+type ConsumerInt interface {
+	Subscribe(topic string, handler func(message []byte, headers map[string]interface{})) error
+	Unsubscribe() error
+}
+
 type RabbitMQConsumer struct {
 	conn         *amqp.Connection
 	channel      *amqp.Channel

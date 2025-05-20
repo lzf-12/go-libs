@@ -13,12 +13,10 @@ type RabbitMQOpts struct {
 	AmqpConfig amqp.Config
 }
 
-type ProducerInt interface {
-	Publish(topic string, message []byte) error
-	PublishWithHeaders(topic string, message []byte, headers map[string]interface{}) error
-}
-
-type ConsumerInt interface {
-	Subscribe(topic string, handler func(message []byte, headers map[string]interface{})) error
-	Unsubscribe() error
+func NewRabbitMQBroker(opts RabbitMQOpts) (*RabbitMQBroker, error) {
+	conn, err := amqp.DialConfig(opts.AmqpString, opts.AmqpConfig)
+	if err != nil {
+		return nil, err
+	}
+	return &RabbitMQBroker{conn: conn}, nil
 }
