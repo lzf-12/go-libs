@@ -7,6 +7,7 @@ import (
 	"msgbroker/retry"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/streadway/amqp"
 )
@@ -35,6 +36,8 @@ type ConsumerCfg struct {
 	PrefetchCount int               // QoS setting for number of unacknowledged messages
 	PrefetchSize  int               // QoS setting for max size of unacknowledged messages
 	RetryPolicy   retry.RetryPolicy // For message processing failures
+	DLQExchange   string
+	DLQRoutingKey string
 }
 
 func (r *RabbitMQBroker) NewConsumer(config ConsumerCfg) (ConsumerInt, error) {
@@ -121,7 +124,7 @@ func (c *RabbitMQConsumer) processMessages(deliveries <-chan amqp.Delivery, hand
 			}
 
 			// process message with retry logic
-			retry.WithBackoff(c.config.RetryPolicy, func() error {
+			err := retry.WithBackoff(c.config.RetryPolicy, func() error {
 				handler(delivery.Body, delivery.Headers)
 
 				// manual ack if AutoAck is false
@@ -132,6 +135,45 @@ func (c *RabbitMQConsumer) processMessages(deliveries <-chan amqp.Delivery, hand
 				}
 				return nil
 			})
+
+			// if max retries failed, move to DLQ
+			if err != nil {
+				log.Printf("Handler failed after max retries, sending to DLQ: %v", err)
+				c.sendToDLQ(delivery)
+			}
+		}
+	}
+}
+
+func (c *RabbitMQConsumer) sendToDLQ(delivery amqp.Delivery) {
+	// Customize DLQ exchange and routing key as needed
+	dlqExchange := c.config.DLQExchange
+	dlqRoutingKey := c.config.DLQRoutingKey
+
+	err := c.channel.Publish(
+		dlqExchange,   // exchange
+		dlqRoutingKey, // routing key
+		false,         // mandatory
+		false,         // immediate
+		amqp.Publishing{
+			ContentType:   delivery.ContentType,
+			Body:          delivery.Body,
+			Headers:       delivery.Headers,
+			Timestamp:     time.Now(),
+			CorrelationId: delivery.CorrelationId,
+			DeliveryMode:  delivery.DeliveryMode,
+			MessageId:     delivery.MessageId,
+			Type:          delivery.Type,
+			AppId:         delivery.AppId,
+		},
+	)
+
+	if err != nil {
+		log.Printf("Failed to send message to DLQ: %v", err)
+	} else {
+		// Always ack or reject the original message to avoid requeue
+		if err := delivery.Ack(false); err != nil {
+			log.Printf("Failed to ack original message after DLQ forward: %v", err)
 		}
 	}
 }
