@@ -43,7 +43,7 @@ func (r *RabbitMQBroker) NewConsumer(config ConsumerCfg) (ConsumerInt, error) {
 		return nil, fmt.Errorf("failed to open channel: %w", err)
 	}
 
-	// Set QoS (prefetch count)
+	// set QoS (prefetch count)
 	if err := channel.Qos(
 		config.PrefetchCount,
 		config.PrefetchSize,
@@ -101,7 +101,6 @@ func (c *RabbitMQConsumer) Subscribe(topic string, handler func(message []byte, 
 
 	// start message processing goroutine
 	go c.processMessages(deliveries, handler)
-	// go c.processMessages(deliveries, saveOrderJsonHandler([]byte{}, header))
 
 	return nil
 }
@@ -165,13 +164,13 @@ type Order struct {
 }
 
 // example consume order event with body as json
-func saveOrderJsonHandler(body []byte, headers map[string]interface{}) func(message []byte, headers map[string]interface{}) {
+func processOrderJsonHandler(body []byte, headers map[string]interface{}) func(message []byte, headers map[string]interface{}) {
 	return func(message []byte, headers map[string]interface{}) {
 
 		//defer saveError
 		var order Order
 		if err := json.Unmarshal(body, &order); err != nil {
-			log.Println("failed processing save order event", fmt.Errorf("error marshal: %w", err))
+			log.Println("failed processing order event", fmt.Errorf("error marshal: %w", err))
 		}
 
 		// handle usecase or repository here
@@ -191,7 +190,7 @@ func TestSubscribeWithFlexibleHandler(*testing.T) {
 	header := map[string]interface{}{"key": "value"}
 
 	var flexibleHandlerFunc func(message []byte, headers map[string]interface{})
-	flexibleHandlerFunc = saveOrderJsonHandler(body, header)
+	flexibleHandlerFunc = processOrderJsonHandler(body, header)
 
 	consumer.Subscribe(topic, flexibleHandlerFunc)
 }
