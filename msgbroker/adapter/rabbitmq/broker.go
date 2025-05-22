@@ -1,6 +1,10 @@
 package rabbitmq
 
-import "github.com/streadway/amqp"
+import (
+	"log"
+
+	"github.com/streadway/amqp"
+)
 
 type RabbitMQBroker struct {
 	conn        *amqp.Connection
@@ -19,4 +23,28 @@ func NewRabbitMQBroker(opts RabbitMQOpts) (*RabbitMQBroker, error) {
 		return nil, err
 	}
 	return &RabbitMQBroker{conn: conn}, nil
+}
+
+func gracefulShutdown(conn *amqp.Connection, ch *amqp.Channel, cleanup func()) {
+
+	// Call optional cleanup logic
+	if cleanup != nil {
+		cleanup()
+	}
+
+	// Gracefully close channel and connection
+	log.Println("Closing RabbitMQ channel and connection...")
+	if ch != nil {
+		if err := ch.Close(); err != nil {
+			log.Printf("Error closing channel: %v\n", err)
+		}
+	}
+
+	if conn != nil {
+		if err := conn.Close(); err != nil {
+			log.Printf("Error closing connection: %v\n", err)
+		}
+	}
+
+	log.Println("RabbitMQ shutdown complete.")
 }

@@ -1,4 +1,4 @@
-package api
+package pubsub
 
 type OrderCreated struct {
 	ID     string  `json:"id" xml:"id" avro:"id" msgpack:"id"`

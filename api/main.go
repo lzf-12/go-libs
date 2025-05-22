@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"flag"
 	"log"
@@ -14,6 +15,7 @@ import (
 
 	"github.com/lzf-12/go-example-collections/api/graphql"
 	"github.com/lzf-12/go-example-collections/api/grpc"
+	"github.com/lzf-12/go-example-collections/api/pubsub"
 	"github.com/lzf-12/go-example-collections/api/rest"
 )
 
@@ -23,7 +25,7 @@ func main() {
 
 	mode := flag.String("mode",
 		"resthttp",
-		"available mode: resthttp | restgin | restfiber | graphql | grpc")
+		"available mode: resthttp | restgin | restfiber | graphql | grpc | consumer-rabbitmq")
 	flag.Parse()
 	serverMode := strings.ToLower(*mode)
 
@@ -34,47 +36,72 @@ func main() {
 	serverErrs := make(chan error, 1) // buffer for at least 1 error
 	var wg sync.WaitGroup
 
+	shutdownctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	switch serverMode {
 	case "resthttp":
-		startServer(&wg, serverErrs, func() error {
-			return rest.ServeRestHttp()
-		})
+		go func() {
+			err := rest.ServeRestHttp(shutdownctx)
+			if err != nil {
+				serverErrs <- err
+			}
+		}()
 	case "restgin":
-		startServer(&wg, serverErrs, func() error {
-			return rest.ServeRestGin()
-		})
+		go func() {
+			err := rest.ServeRestGin(shutdownctx)
+			if err != nil {
+				serverErrs <- err
+			}
+		}()
 	case "restfiber":
-		startServer(&wg, serverErrs, func() error {
-			return rest.ServeRestFiber()
-		})
+		go func() {
+			err := rest.ServeRestFiber(shutdownctx)
+			if err != nil {
+				serverErrs <- err
+			}
+		}()
 	case "graphql":
-		startServer(&wg, serverErrs, func() error {
-			return graphql.ServeGraphql()
-		})
+		go func() {
+			err := graphql.ServeGraphql(shutdownctx)
+			if err != nil {
+				serverErrs <- err
+			}
+		}()
 	case "grpc":
-		startServer(&wg, serverErrs, func() error {
-			return grpc.ServeGrpc()
-		})
+		go func() {
+			err := grpc.ServeGrpc(shutdownctx)
+			if err != nil {
+				serverErrs <- err
+			}
+		}()
+	case "consumer-rabbitmq":
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			err := pubsub.ServeRabbitMQConsumer(shutdownctx)
+			if err != nil {
+				serverErrs <- err
+			}
+		}()
 	default:
 		log.Printf("%s. is invalid mode. valid mode are: rest, graphql, all", serverMode)
 		os.Exit(1)
 	}
 
-	// handle graceful shutdown period
+	// wait for shutdown signal
+	<-shutdownSig
+	log.Println("shutdown signal received...")
+
+	cancel()
+	log.Println("sending shutdown context to dependency...")
+
+	// Wait for shutdown
 	shutdownDone := make(chan struct{})
 	go func() {
-
-		// add other component here to be terminated before shutdown
-		// need to set wg.Add(1) per component
-
 		wg.Wait()
 		close(shutdownDone)
 	}()
-
-	// wait for shutdown signal
-	<-shutdownSig
-	log.Println("shutting down...")
-	wg.Done()
 
 	select {
 	case <-shutdownDone:
@@ -97,10 +124,10 @@ func main() {
 }
 
 // helper for consistently handling waitgroup counter on different mode
-func startServer(wg *sync.WaitGroup, errChan chan<- error, serverFunc func() error) {
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		errChan <- serverFunc()
-	}()
-}
+// func startServer(wg *sync.WaitGroup, errChan chan<- error, serverFunc func() error) {
+// 	wg.Add(1)
+// 	go func() {
+// 		defer wg.Done()
+// 		errChan <- serverFunc()
+// 	}()
+// }

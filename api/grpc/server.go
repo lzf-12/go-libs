@@ -26,7 +26,7 @@ func (s *server) SayHello(_ context.Context, in *pb.HelloRequest) (*pb.HelloResp
 	return &pb.HelloResponse{Message: "Hello " + in.GetName()}, nil
 }
 
-func ServeGrpc() error {
+func ServeGrpc(ctx context.Context) error {
 	flag.Parse()
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", *port))
 	if err != nil {
@@ -36,5 +36,12 @@ func ServeGrpc() error {
 	pb.RegisterHelloServiceServer(s, &server{})
 	log.Printf("server listening at %v", lis.Addr())
 
-	return s.Serve(lis)
+	if err := s.Serve(lis); err != nil {
+		return err
+	}
+
+	<-ctx.Done()
+	// handle dependency shutdown here
+
+	return nil
 }

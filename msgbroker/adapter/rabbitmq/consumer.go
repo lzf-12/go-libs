@@ -13,14 +13,14 @@ import (
 
 type ConsumerInt interface {
 	Subscribe(queuename string, topic string, handler func(message []byte, headers map[string]interface{})) error
-	Unsubscribe() error
+	Props() *RabbitMQConsumer
 }
 
 type RabbitMQConsumer struct {
-	conn         *amqp.Connection
-	channel      *amqp.Channel
+	Conn         *amqp.Connection
+	Channel      *amqp.Channel
 	config       ConsumerCfg
-	done         chan struct{}
+	Done         chan struct{}
 	shutdownOnce sync.Once
 }
 
@@ -55,16 +55,16 @@ func (r *RabbitMQBroker) NewConsumer(config ConsumerCfg) (ConsumerInt, error) {
 	}
 
 	return &RabbitMQConsumer{
-		conn:    r.conn,
-		channel: channel,
+		Conn:    r.conn,
+		Channel: channel,
 		config:  config,
-		done:    make(chan struct{}),
+		Done:    make(chan struct{}),
 	}, nil
 }
 
 func (c *RabbitMQConsumer) Subscribe(queuename string, topic string, handler func(message []byte, headers map[string]interface{})) error {
 	// declare queue if it doesn't exist
-	queue, err := c.channel.QueueDeclare(
+	queue, err := c.Channel.QueueDeclare(
 		queuename,
 		true,  // durable
 		false, // autoDelete
@@ -77,7 +77,7 @@ func (c *RabbitMQConsumer) Subscribe(queuename string, topic string, handler fun
 	}
 
 	// bind queue to exchange/topic
-	if err := c.channel.QueueBind(
+	if err := c.Channel.QueueBind(
 		queuename,
 		topic,       // routing key
 		"amq.topic", // exchange
@@ -88,7 +88,7 @@ func (c *RabbitMQConsumer) Subscribe(queuename string, topic string, handler fun
 	}
 
 	// start consuming messages
-	deliveries, err := c.channel.Consume(
+	deliveries, err := c.Channel.Consume(
 		queue.Name,
 		c.config.ConsumerTag,
 		c.config.AutoAck,
@@ -110,16 +110,30 @@ func (c *RabbitMQConsumer) Subscribe(queuename string, topic string, handler fun
 func (c *RabbitMQConsumer) processMessages(deliveries <-chan amqp.Delivery, handler func([]byte, map[string]interface{})) {
 	for {
 		select {
-		case <-c.done:
+		case <-c.Done:
 			return
 		case delivery, ok := <-deliveries:
 			if !ok {
-				// channel closed, attempt to reconnect
-				if err := c.reconnect(); err != nil {
-					log.Printf("Failed to reconnect: %v", err)
+				// // channel closed, attempt to reconnect
+				// if err := c.reconnect(); err != nil {
+				// 	log.Printf("Failed to reconnect: %v", err)
+				// 	return
+				// }
+				// continue
+
+				// Delivery channel closed — check if shutdown was requested
+				select {
+				case <-c.Done:
+					log.Println("Message channel closed during shutdown. Exiting.")
 					return
+				default:
+					log.Println("Message channel closed unexpectedly — attempting to reconnect...")
+					if err := c.reconnect(); err != nil {
+						log.Printf("Failed to reconnect: %v", err)
+						return
+					}
+					continue
 				}
-				continue
 			}
 
 			// process message with retry logic
@@ -149,7 +163,7 @@ func (c *RabbitMQConsumer) sendToDLQ(delivery amqp.Delivery) {
 	dlqExchange := c.config.DLQExchange     // default configuration
 	dlqRoutingKey := c.config.DLQRoutingKey // default configuration
 
-	err := c.channel.Publish(
+	err := c.Channel.Publish(
 		dlqExchange,   // exchange
 		dlqRoutingKey, // routing key
 		false,         // mandatory
@@ -178,17 +192,14 @@ func (c *RabbitMQConsumer) sendToDLQ(delivery amqp.Delivery) {
 }
 
 func (c *RabbitMQConsumer) reconnect() error {
-	channel, err := c.conn.Channel()
+	channel, err := c.Conn.Channel()
 	if err != nil {
 		return fmt.Errorf("failed to reopen channel: %w", err)
 	}
-	c.channel = channel
+	c.Channel = channel
 	return nil
 }
 
-func (c *RabbitMQConsumer) Unsubscribe() error {
-	c.shutdownOnce.Do(func() {
-		close(c.done) // gracefully close multiple go routine
-	})
-	return nil
+func (c *RabbitMQConsumer) Props() *RabbitMQConsumer {
+	return c
 }

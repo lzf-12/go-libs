@@ -1,6 +1,7 @@
-package api
+package pubsub
 
 import (
+	"context"
 	"encoding/json"
 	"encoding/xml"
 	"log"
@@ -16,7 +17,7 @@ const (
 	TopicOrderV1Xml  = "order.v1.xml"
 )
 
-func InitConsumer() {
+func InitRabbitMQConsumer(ctx context.Context) {
 
 	opts := rabbitmq.RabbitMQOpts{
 		AmqpString: "amqp://guest:guest@localhost:5672/",
@@ -29,7 +30,7 @@ func InitConsumer() {
 
 	consumerCfg := rabbitmq.ConsumerCfg{
 		PrefetchCount: 0,
-		PrefetchSize:  1,
+		PrefetchSize:  0,
 		RetryPolicy: retry.RetryPolicy{
 			MaxRetries:      3,
 			InitialInterval: 2 * time.Second,
@@ -68,6 +69,15 @@ func InitConsumer() {
 		}
 	}
 
+	// shutdown context received
+	<-ctx.Done()
+
+	log.Println("shutdown signal received in RabbitMQ consumer. cleaning up...")
+
+	close(consumer.Props().Done)  // shutdown channel
+	consumer.Props().Conn.Close() // close connection
+
+	log.Println("rabbitMQ disconnection complete")
 }
 
 func handleCreateOrderJSON(msg []byte, _ map[string]interface{}) {

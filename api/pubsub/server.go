@@ -1,20 +1,12 @@
-package api
+package pubsub
 
 import (
-	"log"
-	"os"
-	"os/signal"
-	"syscall"
+	"context"
 )
 
-func ServeRabbitMQPubsub() {
+func ServeRabbitMQConsumer(ctx context.Context) error {
 
-	InitConsumer()
+	InitRabbitMQConsumer(ctx)
 
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	<-quit
-
-	log.Println("🛑 Shutting down consumer...")
-
+	return nil
 }

@@ -1,27 +1,50 @@
 package rest
 
 import (
+	"context"
 	"log"
 	"net/http"
 )
 
-func ServeRestHttp() error {
+func ServeRestHttp(ctx context.Context) error {
 
 	http.HandleFunc("/resthttp", HandlerRestHttp())
 	log.Println("REST without framework running at :8080")
-	return http.ListenAndServe(":8080", nil)
+
+	if err := http.ListenAndServe(":8080", nil); err != nil {
+		return err
+	}
+
+	<-ctx.Done()
+	// handle dependency shutdown here
+
+	return nil
 }
 
-func ServeRestGin() error {
+func ServeRestGin(ctx context.Context) error {
 
 	gin := InitGin()
 	gin.GET("/restgin", HandlerGin())
-	return gin.Run(":8081")
+	if err := gin.Run(":8081"); err != nil {
+		return err
+	}
+
+	<-ctx.Done()
+	// handle dependency shutdown here
+
+	return nil
 }
 
-func ServeRestFiber() error {
+func ServeRestFiber(ctx context.Context) error {
 
 	fiber := InitFiber()
 	fiber.Get("/restfiber", HandlerFiber())
-	return fiber.Listen(":8082")
+	if err := fiber.Listen(":8082"); err != nil {
+		return err
+	}
+
+	<-ctx.Done()
+	// handle dependency shutdown here
+
+	return nil
 }

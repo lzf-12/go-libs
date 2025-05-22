@@ -1,6 +1,7 @@
 package graphql
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"os"
@@ -17,7 +18,7 @@ import (
 
 const defaultPort = "8080"
 
-func ServeGraphql() error {
+func ServeGraphql(ctx context.Context) error {
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = defaultPort
@@ -40,5 +41,13 @@ func ServeGraphql() error {
 	http.Handle("/query", srv)
 
 	log.Printf("connect to http://localhost:%s/ for GraphQL playground", port)
-	return http.ListenAndServe(":"+port, nil)
+
+	if err := http.ListenAndServe(":"+port, nil); err != nil {
+		return err
+	}
+
+	<-ctx.Done()
+	// handle dependency shutdown here
+
+	return nil
 }
