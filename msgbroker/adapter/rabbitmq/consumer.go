@@ -1,19 +1,18 @@
 package rabbitmq
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
-	"msgbroker/retry"
 	"sync"
-	"testing"
 	"time"
+
+	"github.com/lzf-12/go-example-collections/msgbroker/retry"
 
 	"github.com/streadway/amqp"
 )
 
 type ConsumerInt interface {
-	Subscribe(topic string, handler func(message []byte, headers map[string]interface{})) error
+	Subscribe(queuename string, topic string, handler func(message []byte, headers map[string]interface{})) error
 	Unsubscribe() error
 }
 
@@ -63,10 +62,10 @@ func (r *RabbitMQBroker) NewConsumer(config ConsumerCfg) (ConsumerInt, error) {
 	}, nil
 }
 
-func (c *RabbitMQConsumer) Subscribe(topic string, handler func(message []byte, headers map[string]interface{})) error {
+func (c *RabbitMQConsumer) Subscribe(queuename string, topic string, handler func(message []byte, headers map[string]interface{})) error {
 	// declare queue if it doesn't exist
 	queue, err := c.channel.QueueDeclare(
-		c.config.QueueName,
+		queuename,
 		true,  // durable
 		false, // autoDelete
 		false, // exclusive
@@ -79,7 +78,7 @@ func (c *RabbitMQConsumer) Subscribe(topic string, handler func(message []byte, 
 
 	// bind queue to exchange/topic
 	if err := c.channel.QueueBind(
-		queue.Name,
+		queuename,
 		topic,       // routing key
 		"amq.topic", // exchange
 		false,       // noWait
@@ -146,9 +145,9 @@ func (c *RabbitMQConsumer) processMessages(deliveries <-chan amqp.Delivery, hand
 }
 
 func (c *RabbitMQConsumer) sendToDLQ(delivery amqp.Delivery) {
-	// Customize DLQ exchange and routing key as needed
-	dlqExchange := c.config.DLQExchange
-	dlqRoutingKey := c.config.DLQRoutingKey
+
+	dlqExchange := c.config.DLQExchange     // default configuration
+	dlqRoutingKey := c.config.DLQRoutingKey // default configuration
 
 	err := c.channel.Publish(
 		dlqExchange,   // exchange
@@ -192,47 +191,4 @@ func (c *RabbitMQConsumer) Unsubscribe() error {
 		close(c.done) // gracefully close multiple go routine
 	})
 	return nil
-}
-
-//
-//  EXAMPLE ON HOW TO USE FLEXIBLE HANDLER TO CONSUME AND PROCESS MESSAGE AND METADATA
-//  codes below are only example
-//
-
-type Order struct {
-	OrderId   string `json:"order_id"`
-	ProductId string `json:"product_id"`
-	Qty       int    `json:"qty"`
-}
-
-// example consume order event with body as json
-func processOrderJsonHandler(body []byte, headers map[string]interface{}) func(message []byte, headers map[string]interface{}) {
-	return func(message []byte, headers map[string]interface{}) {
-
-		//defer saveError
-		var order Order
-		if err := json.Unmarshal(body, &order); err != nil {
-			log.Println("failed processing order event", fmt.Errorf("error marshal: %w", err))
-		}
-
-		// handle usecase or repository here
-	}
-}
-
-func TestSubscribeWithFlexibleHandler(*testing.T) {
-
-	rmq := RabbitMQBroker{}
-	consumer, err := rmq.NewConsumer(rmq.consumercfg)
-	if err != nil {
-		return
-	}
-
-	topic := "topic"
-	body := []byte{10, 123, 123}
-	header := map[string]interface{}{"key": "value"}
-
-	var flexibleHandlerFunc func(message []byte, headers map[string]interface{})
-	flexibleHandlerFunc = processOrderJsonHandler(body, header)
-
-	consumer.Subscribe(topic, flexibleHandlerFunc)
 }

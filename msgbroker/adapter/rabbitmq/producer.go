@@ -3,8 +3,9 @@ package rabbitmq
 import (
 	"errors"
 	"fmt"
-	"msgbroker/retry"
 	"time"
+
+	"github.com/lzf-12/go-example-collections/msgbroker/retry"
 
 	"github.com/streadway/amqp"
 )

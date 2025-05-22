@@ -1,10 +1,11 @@
 package graphql
 
 import (
-	"api/graphql/graph"
 	"log"
 	"net/http"
 	"os"
+
+	"github.com/lzf-12/go-example-collections/api/graphql/graph"
 
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/handler/extension"

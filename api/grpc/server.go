@@ -7,8 +7,7 @@ import (
 	"log"
 	"net"
 
-	pb "api/grpc/hello"
-
+	pb "github.com/lzf-12/go-example-collections/api/grpc/hello"
 	"google.golang.org/grpc"
 )
 

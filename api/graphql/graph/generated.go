@@ -3,7 +3,7 @@
 package graph
 
 import (
-	"api/graphql/graph/model"
+	"github.com/lzf-12/go-example-collections/api/graphql/graph/model"
 	"bytes"
 	"context"
 	"embed"

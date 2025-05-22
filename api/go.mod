@@ -1,11 +1,12 @@
-module api
+module github.com/lzf-12/go-example-collections/api
 
-go 1.23.5
+go 1.24.2
 
 require (
 	github.com/99designs/gqlgen v0.17.73
 	github.com/gin-gonic/gin v1.10.0
 	github.com/gofiber/fiber/v2 v2.52.6
+	github.com/lzf-12/go-example-collections/msgbroker v0.0.0-00010101000000-000000000000
 	github.com/vektah/gqlparser/v2 v2.5.26
 	google.golang.org/grpc v1.72.1
 	google.golang.org/protobuf v1.36.6
@@ -40,6 +41,7 @@ require (
 	github.com/pelletier/go-toml/v2 v2.2.2 // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
 	github.com/sosodev/duration v1.3.1 // indirect
+	github.com/streadway/amqp v1.1.0 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.2.12 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
@@ -50,6 +52,13 @@ require (
 	golang.org/x/net v0.39.0 // indirect
 	golang.org/x/sys v0.32.0 // indirect
 	golang.org/x/text v0.24.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20250218202821-56aae31c358a // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250519155744-55703ea1f237 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+replace github.com/lzf-12/go-example-collections/storage => ../storage
+
+replace github.com/lzf-12/go-example-collections/msgbroker => ../msgbroker
+
+// temporary fix caused by multiple genproto version and conflict with kafka-confluent-go module
+replace google.golang.org/genproto => google.golang.org/genproto/googleapis/rpc v0.0.0-20250519155744-55703ea1f237

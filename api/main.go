@@ -1,9 +1,6 @@
 package main
 
 import (
-	"api/graphql"
-	"api/grpc"
-	"api/rest"
 	"errors"
 	"flag"
 	"log"
@@ -14,6 +11,10 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
+	"github.com/lzf-12/go-example-collections/api/graphql"
+	"github.com/lzf-12/go-example-collections/api/grpc"
+	"github.com/lzf-12/go-example-collections/api/rest"
 )
 
 const shutdowntimeout = 10 * time.Second

@@ -1,4 +1,4 @@
-module msgbroker
+module github.com/lzf-12/go-example-collections/msgbroker
 
 go 1.24.2
 
