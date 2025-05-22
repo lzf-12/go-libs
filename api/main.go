@@ -85,7 +85,7 @@ func main() {
 			}
 		}()
 	default:
-		log.Printf("%s. is invalid mode. valid mode are: rest, graphql, all", serverMode)
+		log.Printf("%s. is invalid mode. valid mode are: resthttp | restgin | restfiber | graphql | grpc | consumer-rabbitmq", serverMode)
 		os.Exit(1)
 	}
 
@@ -122,12 +122,3 @@ func main() {
 	default:
 	}
 }
-
-// helper for consistently handling waitgroup counter on different mode
-// func startServer(wg *sync.WaitGroup, errChan chan<- error, serverFunc func() error) {
-// 	wg.Add(1)
-// 	go func() {
-// 		defer wg.Done()
-// 		errChan <- serverFunc()
-// 	}()
-// }
