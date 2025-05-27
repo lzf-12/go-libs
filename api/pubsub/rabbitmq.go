@@ -11,12 +11,6 @@ import (
 	"github.com/lzf-12/go-example-collections/msgbroker/retry"
 )
 
-const (
-	QueueOrder       = "order-service.queue"
-	TopicOrderV1Json = "order.v1.json"
-	TopicOrderV1Xml  = "order.v1.xml"
-)
-
 func InitRabbitMQConsumer(ctx context.Context) {
 
 	opts := rabbitmq.RabbitMQOpts{
@@ -48,14 +42,14 @@ func InitRabbitMQConsumer(ctx context.Context) {
 
 	mapQueueTopicHandler := []QueueTopicHandler{
 		{
-			Queue:   QueueOrder,
+			Queue:   RmqQueueOrder,
 			Topic:   TopicOrderV1Json,
-			Handler: handleCreateOrderJSON,
+			Handler: handleCreateOrderV1JSON,
 		},
 		{
-			Queue:   QueueOrder,
+			Queue:   RmqQueueOrder,
 			Topic:   TopicOrderV1Xml,
-			Handler: handleCreateOrderXML,
+			Handler: handleCreateOrderV1XML,
 		},
 	}
 
@@ -80,8 +74,8 @@ func InitRabbitMQConsumer(ctx context.Context) {
 	log.Println("rabbitMQ disconnection complete")
 }
 
-func handleCreateOrderJSON(msg []byte, _ map[string]interface{}) {
-	var o OrderCreated
+func handleCreateOrderV1JSON(msg []byte, _ map[string]interface{}) {
+	var o OrderCreatedV1
 	if err := json.Unmarshal(msg, &o); err != nil {
 		log.Printf("[JSON] Failed to parse: %v", err)
 		return
@@ -90,8 +84,8 @@ func handleCreateOrderJSON(msg []byte, _ map[string]interface{}) {
 	// call create order flow process here
 }
 
-func handleCreateOrderXML(msg []byte, _ map[string]interface{}) {
-	var o OrderCreated
+func handleCreateOrderV1XML(msg []byte, _ map[string]interface{}) {
+	var o OrderCreatedV1
 	if err := xml.Unmarshal(msg, &o); err != nil {
 		log.Printf("[XML] Failed to parse: %v", err)
 		return

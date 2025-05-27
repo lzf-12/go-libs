@@ -25,7 +25,7 @@ func main() {
 
 	mode := flag.String("mode",
 		"resthttp",
-		"available mode: resthttp | restgin | restfiber | graphql | grpc | consumer-rabbitmq")
+		"available mode: resthttp | restgin | restfiber | graphql | grpc | consumer-rabbitmq | consumer-kafka")
 	flag.Parse()
 	serverMode := strings.ToLower(*mode)
 
@@ -84,8 +84,17 @@ func main() {
 				serverErrs <- err
 			}
 		}()
+	case "consumer-kafka":
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			err := pubsub.ServeKafkaConsumer(shutdownctx)
+			if err != nil {
+				serverErrs <- err
+			}
+		}()
 	default:
-		log.Printf("%s. is invalid mode. valid mode are: resthttp | restgin | restfiber | graphql | grpc | consumer-rabbitmq", serverMode)
+		log.Printf("%s. is invalid mode. valid mode are: resthttp | restgin | restfiber | graphql | grpc | consumer-rabbitmq | consumer-kafka", serverMode)
 		os.Exit(1)
 	}
 

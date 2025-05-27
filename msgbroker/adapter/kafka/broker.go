@@ -25,58 +25,85 @@ type Message struct {
 	Value     []byte
 	Headers   map[string]string
 	Timestamp time.Time
+	Topic     *string
 }
 
 type KafkaClient struct {
-	producer     *kafka.Producer
-	consumer     *kafka.Consumer
-	adminClient  *kafka.AdminClient
-	configMap    *kafka.ConfigMap
+	Producer     *kafka.Producer
+	Consumer     *kafka.Consumer
+	Admin        *kafka.AdminClient
+	ConfigMap    *kafka.ConfigMap
 	errorChannel chan error
 }
 
-// newKafkaClient creates a new Kafka client with producer, consumer, and admin capabilities
-func NewKafkaClient(configMap *kafka.ConfigMap) (*KafkaClient, error) {
+func NewKafkaConfigMap() *kafka.ConfigMap {
+	return &kafka.ConfigMap{}
+}
 
-	// Set some sane defaults if not provided
-	if _, ok := (*configMap)["go.events.channel.enable"]; !ok {
-		(*configMap)["go.events.channel.enable"] = true
+func NewKafkaConsumerClient(consumerCfgMap *kafka.ConfigMap, adminCfgMap *kafka.ConfigMap) (*KafkaClient, error) {
+
+	// set some sane defaults if not provided
+	if _, ok := (*consumerCfgMap)["go.events.channel.enable"]; !ok {
+		(*consumerCfgMap)["go.events.channel.enable"] = true
 	}
 
-	if _, ok := (*configMap)["enable.auto.commit"]; !ok {
-		(*configMap)["enable.auto.commit"] = false // Prefer manual commits for reliability
+	if _, ok := (*consumerCfgMap)["enable.auto.commit"]; !ok {
+		(*consumerCfgMap)["enable.auto.commit"] = false // Prefer manual commits for reliability
 	}
 
-	// Initialize producer
-	producer, err := kafka.NewProducer(configMap)
+	var consumerClient *kafka.Consumer
+
+	consumerClient, err := kafka.NewConsumer(consumerCfgMap)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create producer: %w", err)
+		log.Println("error new consumer: ", err)
+		consumerClient.Close()
+		return nil, fmt.Errorf("failed to create new consumer: %w", err)
 	}
 
-	// Initialize consumer
-	consumer, err := kafka.NewConsumer(configMap)
+	// derive admin client from consumer
+	adminFromClient, err := kafka.NewAdminClientFromConsumer(consumerClient)
 	if err != nil {
-		producer.Close()
-		return nil, fmt.Errorf("failed to create consumer: %w", err)
-	}
-
-	// Initialize admin client
-	adminClient, err := kafka.NewAdminClient(configMap)
-	if err != nil {
-		producer.Close()
-		consumer.Close()
-		return nil, fmt.Errorf("failed to create admin client: %w", err)
+		log.Println("error new admin from consumer: ", err)
+		adminFromClient.Close()
+		return nil, fmt.Errorf("failed to create new admin from consumer: %w", err)
 	}
 
 	client := &KafkaClient{
-		producer:     producer,
-		consumer:     consumer,
-		adminClient:  adminClient,
-		configMap:    configMap,
+		Admin:        adminFromClient,
+		Consumer:     consumerClient,
+		ConfigMap:    consumerCfgMap,
 		errorChannel: make(chan error, 10), // Buffered channel to avoid blocking
 	}
 
-	// Start goroutine to handle delivery reports and errors
+	return client, nil
+}
+
+func NewKafkaProducerClient(producerCfgMap *kafka.ConfigMap) (*KafkaClient, error) {
+
+	// set some sane defaults if not provided
+	if _, ok := (*producerCfgMap)["go.events.channel.enable"]; !ok {
+		(*producerCfgMap)["go.events.channel.enable"] = true
+	}
+
+	if _, ok := (*producerCfgMap)["enable.auto.commit"]; !ok {
+		(*producerCfgMap)["enable.auto.commit"] = false
+	}
+
+	var producerClient *kafka.Producer
+
+	producerClient, err := kafka.NewProducer(producerCfgMap)
+	if err != nil {
+		producerClient.Close()
+		return nil, fmt.Errorf("failed to create new consumer: %w", err)
+	}
+
+	client := &KafkaClient{
+		Producer:     producerClient,
+		ConfigMap:    producerCfgMap,
+		errorChannel: make(chan error, 10), // Buffered channel to avoid blocking
+	}
+
+	// start goroutine to handle delivery reports and errors
 	go client.handleEvents()
 
 	return client, nil
@@ -86,7 +113,7 @@ func NewKafkaClient(configMap *kafka.ConfigMap) (*KafkaClient, error) {
 func (kc *KafkaClient) handleEvents() {
 	for {
 		select {
-		case e := <-kc.producer.Events():
+		case e := <-kc.Producer.Events():
 			switch ev := e.(type) {
 			case *kafka.Message:
 				if ev.TopicPartition.Error != nil {
@@ -104,10 +131,10 @@ func (kc *KafkaClient) handleEvents() {
 func (kc *KafkaClient) Close() error {
 	var errs []error
 
-	if kc.producer != nil {
+	if kc.Producer != nil {
 
 		// flushing for message guarantee, prevent loss, and orderly shutdown
-		remainingevents := kc.producer.Flush(int(defaultTimeout.Milliseconds()))
+		remainingevents := kc.Producer.Flush(int(defaultTimeout.Milliseconds()))
 
 		if remainingevents > 0 {
 
@@ -121,17 +148,17 @@ func (kc *KafkaClient) Close() error {
 			errs = append(errs, fmt.Errorf("%d messages were not delivered", remainingevents))
 		}
 
-		kc.producer.Close()
+		kc.Producer.Close()
 	}
 
-	if kc.consumer != nil {
-		if err := kc.consumer.Close(); err != nil {
+	if kc.Consumer != nil {
+		if err := kc.Consumer.Close(); err != nil {
 			errs = append(errs, fmt.Errorf("failed to close consumer: %w", err))
 		}
 	}
 
-	if kc.adminClient != nil {
-		kc.adminClient.Close()
+	if kc.Admin != nil {
+		kc.Admin.Close()
 	}
 
 	close(kc.errorChannel)
@@ -150,11 +177,11 @@ func (kc *KafkaClient) ErrorChannel() <-chan error {
 
 // HealthCheck verifies Kafka connectivity
 func (kc *KafkaClient) HealthCheck(ctx context.Context) error {
-	if kc.adminClient == nil {
+	if kc.Admin == nil {
 		return errors.New("admin client not initialized")
 	}
 
-	_, err := kc.adminClient.GetMetadata(nil, true, int(defaultTimeout.Milliseconds()))
+	_, err := kc.Admin.GetMetadata(nil, true, int(defaultTimeout.Milliseconds()))
 	if err != nil {
 		return fmt.Errorf("kafka health check failed: %w", err)
 	}
@@ -169,7 +196,7 @@ func (kc *KafkaClient) getUndeliveredMessages(count int) []*kafka.Message {
 	// Drain the event channel to check for undelivered messages
 	for len(undelivered) < count {
 		select {
-		case ev := <-kc.producer.Events():
+		case ev := <-kc.Producer.Events():
 			if msg, ok := ev.(*kafka.Message); ok {
 				if msg.TopicPartition.Error != nil {
 					undelivered = append(undelivered, msg)

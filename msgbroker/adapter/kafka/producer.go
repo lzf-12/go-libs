@@ -12,7 +12,7 @@ import (
 
 // Publish sends a message to Kafka (synchronous with timeout)
 func (kc *KafkaClient) Publish(ctx context.Context, topic string, msg Message) error {
-	if kc.producer == nil {
+	if kc.Producer == nil {
 		return ErrProducerNotInitialized
 	}
 
@@ -42,7 +42,7 @@ func (kc *KafkaClient) Publish(ctx context.Context, topic string, msg Message) e
 	deliveryChan := make(chan kafka.Event)
 	defer close(deliveryChan)
 
-	err := kc.producer.Produce(kafkaMsg, deliveryChan)
+	err := kc.Producer.Produce(kafkaMsg, deliveryChan)
 	if err != nil {
 		return fmt.Errorf("failed to produce message: %w", err)
 	}
@@ -63,7 +63,7 @@ func (kc *KafkaClient) Publish(ctx context.Context, topic string, msg Message) e
 
 // PublishAsync sends a message to Kafka asynchronously
 func (kc *KafkaClient) PublishAsync(topic string, msg Message) error {
-	if kc.producer == nil {
+	if kc.Producer == nil {
 		return ErrProducerNotInitialized
 	}
 
@@ -90,7 +90,7 @@ func (kc *KafkaClient) PublishAsync(topic string, msg Message) error {
 		kafkaMsg.Headers = headers
 	}
 
-	return kc.producer.Produce(kafkaMsg, nil)
+	return kc.Producer.Produce(kafkaMsg, nil)
 }
 
 // PublishJSON is a convenience method for publishing JSON messages
