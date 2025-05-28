@@ -50,17 +50,6 @@ func InitKafkaConsumer(ctx context.Context, autoCreateTopic bool) {
 		{Topic: pubsub.TopicOrderV2Xml, Handler: handler.OrderHandlerV2Xml, Partitions: 1, ReplicationFactor: 1},
 	}
 
-	if autoCreateTopic {
-
-		// create topics if not exist
-		err = kc.CreateTopicsIfNotExist(ctx, topicHandlers)
-		if err != nil {
-			log.Println("error: ", err)
-			return
-		}
-
-	}
-
 	// subscribe all topic and handlers
 	err = kc.SubscribeTopics(ctx, topicHandlers)
 	if err != nil {
