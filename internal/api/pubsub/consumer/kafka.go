@@ -32,7 +32,6 @@ func InitKafkaConsumer(ctx context.Context, autoCreateTopic bool) {
 	if err != nil {
 		log.Println("error initialize kafka consumer client: ", err)
 	}
-	log.Println("success initialize kafka consumer client")
 
 	// healtcheck
 	log.Println("kafka healthcheck...")
@@ -56,4 +55,6 @@ func InitKafkaConsumer(ctx context.Context, autoCreateTopic bool) {
 		log.Println("subscribe single topic error: ", err)
 		return
 	}
+
+	log.Println("success initialize kafka consumer client")
 }
