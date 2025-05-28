@@ -1,12 +1,12 @@
-package pubsub
+package consumer
 
 import (
 	"context"
-	"encoding/json"
-	"encoding/xml"
 	"log"
 	"time"
 
+	"github.com/lzf-12/go-example-collections/internal/api/pubsub/handler"
+	"github.com/lzf-12/go-example-collections/internal/api/pubsub/model"
 	"github.com/lzf-12/go-example-collections/msgbroker/adapter/rabbitmq"
 	"github.com/lzf-12/go-example-collections/msgbroker/retry"
 )
@@ -40,16 +40,16 @@ func InitRabbitMQConsumer(ctx context.Context) {
 		log.Fatalf("consumer initialize failed: %v", err)
 	}
 
-	mapQueueTopicHandler := []QueueTopicHandler{
+	mapQueueTopicHandler := []model.QueueTopicHandler{
 		{
-			Queue:   RmqQueueOrder,
-			Topic:   TopicOrderV1Json,
-			Handler: handleCreateOrderV1JSON,
+			Queue:   model.RmqQueueOrder,
+			Topic:   model.TopicOrderV1Json,
+			Handler: handler.HandleCreateOrderV1JSON,
 		},
 		{
-			Queue:   RmqQueueOrder,
-			Topic:   TopicOrderV1Xml,
-			Handler: handleCreateOrderV1XML,
+			Queue:   model.RmqQueueOrder,
+			Topic:   model.TopicOrderV1Xml,
+			Handler: handler.HandleCreateOrderV1XML,
 		},
 	}
 
@@ -72,24 +72,4 @@ func InitRabbitMQConsumer(ctx context.Context) {
 	consumer.Props().Conn.Close() // close connection
 
 	log.Println("rabbitMQ disconnection complete")
-}
-
-func handleCreateOrderV1JSON(msg []byte, _ map[string]interface{}) {
-	var o OrderCreatedV1
-	if err := json.Unmarshal(msg, &o); err != nil {
-		log.Printf("[JSON] Failed to parse: %v", err)
-		return
-	}
-
-	// call create order flow process here
-}
-
-func handleCreateOrderV1XML(msg []byte, _ map[string]interface{}) {
-	var o OrderCreatedV1
-	if err := xml.Unmarshal(msg, &o); err != nil {
-		log.Printf("[XML] Failed to parse: %v", err)
-		return
-	}
-
-	// call create order flow process here
 }

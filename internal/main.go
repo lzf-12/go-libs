@@ -13,10 +13,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/lzf-12/go-example-collections/api/graphql"
-	"github.com/lzf-12/go-example-collections/api/grpc"
-	"github.com/lzf-12/go-example-collections/api/pubsub"
-	"github.com/lzf-12/go-example-collections/api/rest"
+	"github.com/lzf-12/go-example-collections/internal/api/graphql"
+	"github.com/lzf-12/go-example-collections/internal/api/grpc"
+	"github.com/lzf-12/go-example-collections/internal/api/pubsub"
+	"github.com/lzf-12/go-example-collections/internal/api/rest"
 )
 
 const shutdowntimeout = 10 * time.Second

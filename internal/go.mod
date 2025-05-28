@@ -1,14 +1,14 @@
-module github.com/lzf-12/go-example-collections/api
+module github.com/lzf-12/go-example-collections/internal
 
 go 1.24.2
 
 require (
 	github.com/99designs/gqlgen v0.17.73
-	github.com/gin-gonic/gin v1.10.0
-	github.com/gofiber/fiber/v2 v2.52.6
-	github.com/lzf-12/go-example-collections/msgbroker v0.0.0-00010101000000-000000000000
-	github.com/vektah/gqlparser/v2 v2.5.26
-	google.golang.org/grpc v1.72.1
+	github.com/gin-gonic/gin v1.10.1
+	github.com/gofiber/fiber/v2 v2.52.8
+	github.com/lzf-12/go-example-collections/msgbroker v0.0.0-20250527160035-6d313f248abd
+	github.com/vektah/gqlparser/v2 v2.5.27
+	google.golang.org/grpc v1.72.2
 	google.golang.org/protobuf v1.36.6
 )
 
@@ -19,6 +19,7 @@ require (
 	github.com/bytedance/sonic/loader v0.1.1 // indirect
 	github.com/cloudwego/base64x v0.1.4 // indirect
 	github.com/cloudwego/iasm v0.2.0 // indirect
+	github.com/confluentinc/confluent-kafka-go v1.9.2 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.3 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
@@ -52,13 +53,6 @@ require (
 	golang.org/x/net v0.39.0 // indirect
 	golang.org/x/sys v0.32.0 // indirect
 	golang.org/x/text v0.24.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20250519155744-55703ea1f237 // indirect
+	google.golang.org/genproto v0.0.0-20220503193339-ba3ae3f07e29 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-replace github.com/lzf-12/go-example-collections/storage => ../storage
-
-replace github.com/lzf-12/go-example-collections/msgbroker => ../msgbroker
-
-// temporary fix caused by multiple genproto version and conflict with kafka-confluent-go module
-replace google.golang.org/genproto => google.golang.org/genproto/googleapis/rpc v0.0.0-20250519155744-55703ea1f237

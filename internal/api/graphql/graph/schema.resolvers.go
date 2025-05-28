@@ -8,16 +8,16 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/lzf-12/go-example-collections/api/graphql/graph/model"
+	model1 "github.com/lzf-12/go-example-collections/internal/api/graphql/graph/model"
 )
 
 // CreateTodo is the resolver for the createTodo field.
-func (r *mutationResolver) CreateTodo(ctx context.Context, input model.NewTodo) (*model.Todo, error) {
+func (r *mutationResolver) CreateTodo(ctx context.Context, input model1.NewTodo) (*model1.Todo, error) {
 	panic(fmt.Errorf("not implemented: CreateTodo - createTodo"))
 }
 
 // Todos is the resolver for the todos field.
-func (r *queryResolver) Todos(ctx context.Context) ([]*model.Todo, error) {
+func (r *queryResolver) Todos(ctx context.Context) ([]*model1.Todo, error) {
 	panic(fmt.Errorf("not implemented: Todos - todos"))
 }
 

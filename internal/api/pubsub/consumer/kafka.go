@@ -1,12 +1,12 @@
-package pubsub
+package consumer
 
 import (
 	"context"
-	"encoding/json"
-	"encoding/xml"
 	"fmt"
 	"log"
 
+	handler "github.com/lzf-12/go-example-collections/internal/api/pubsub/handler"
+	pubsub "github.com/lzf-12/go-example-collections/internal/api/pubsub/model"
 	"github.com/lzf-12/go-example-collections/msgbroker/adapter/kafka"
 )
 
@@ -46,8 +46,8 @@ func InitKafkaConsumer(ctx context.Context, autoCreateTopic bool) {
 	// TODO: centralize topic partition configuration in .yml
 	// topic handlers map
 	topicHandlers := []kafka.TopicHandler{
-		{Topic: TopicOrderV2Json, Handler: orderHandlerV2Json, Partitions: 1, ReplicationFactor: 1},
-		{Topic: TopicOrderV2Xml, Handler: orderHandlerV2Xml, Partitions: 1, ReplicationFactor: 1},
+		{Topic: pubsub.TopicOrderV2Json, Handler: handler.OrderHandlerV2Json, Partitions: 1, ReplicationFactor: 1},
+		{Topic: pubsub.TopicOrderV2Xml, Handler: handler.OrderHandlerV2Xml, Partitions: 1, ReplicationFactor: 1},
 	}
 
 	if autoCreateTopic {
@@ -67,48 +67,4 @@ func InitKafkaConsumer(ctx context.Context, autoCreateTopic bool) {
 		log.Println("subscribe single topic error: ", err)
 		return
 	}
-}
-
-func orderHandlerV2Json(msg kafka.Message) error {
-	var order OrderCreatedV2
-	if err := json.Unmarshal(msg.Value, &order); err != nil {
-		return fmt.Errorf("failed to decode json order: %w", err)
-	}
-
-	// validate required fields
-	if order.ID == "" || order.Product == "" || order.Quantity <= 0 {
-		return fmt.Errorf("invalid order: missing required fields")
-	}
-
-	// business logic (e.g., save to DB, process payment, etc.)
-	log.Printf("processing order: %+v", order)
-
-	go func() {
-		// process logic here
-
-	}()
-
-	return nil
-}
-
-func orderHandlerV2Xml(msg kafka.Message) error {
-	var order OrderCreatedV2
-	if err := xml.Unmarshal(msg.Value, &order); err != nil {
-		return fmt.Errorf("failed to decode json order: %w", err)
-	}
-
-	// validate required fields
-	if order.ID == "" || order.Product == "" || order.Quantity <= 0 {
-		return fmt.Errorf("invalid order: missing required fields")
-	}
-
-	// business logic (e.g., save to DB, process payment, etc.)
-	log.Printf("processing order: %+v", order)
-
-	go func() {
-		// process logic here
-
-	}()
-
-	return nil
 }
