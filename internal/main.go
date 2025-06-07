@@ -15,8 +15,8 @@ import (
 
 	"github.com/lzf-12/go-example-collections/internal/api/graphql"
 	"github.com/lzf-12/go-example-collections/internal/api/grpc"
-	"github.com/lzf-12/go-example-collections/internal/api/pubsub"
 	"github.com/lzf-12/go-example-collections/internal/api/rest"
+	"github.com/lzf-12/go-example-collections/internal/consumer"
 )
 
 const shutdowntimeout = 10 * time.Second
@@ -42,23 +42,23 @@ func main() {
 	switch serverMode {
 	case "resthttp":
 		go func() {
-			err := rest.ServeRestHttp(shutdownctx)
-			if err != nil {
+			if err := rest.ServeRestHttp(shutdownctx); err != nil {
 				serverErrs <- err
+				shutdownSig <- os.Interrupt
 			}
 		}()
 	case "restgin":
 		go func() {
-			err := rest.ServeRestGin(shutdownctx)
-			if err != nil {
+			if err := rest.ServeRestGin(shutdownctx); err != nil {
 				serverErrs <- err
+				shutdownSig <- os.Interrupt
 			}
 		}()
 	case "restfiber":
 		go func() {
-			err := rest.ServeRestFiber(shutdownctx)
-			if err != nil {
+			if err := rest.ServeRestFiber(shutdownctx); err != nil {
 				serverErrs <- err
+				shutdownSig <- os.Interrupt
 			}
 		}()
 	case "graphql":
@@ -66,6 +66,7 @@ func main() {
 			err := graphql.ServeGraphql(shutdownctx)
 			if err != nil {
 				serverErrs <- err
+				shutdownSig <- os.Interrupt
 			}
 		}()
 	case "grpc":
@@ -73,24 +74,25 @@ func main() {
 			err := grpc.ServeGrpc(shutdownctx)
 			if err != nil {
 				serverErrs <- err
+				shutdownSig <- os.Interrupt
 			}
 		}()
 	case "consumer-rabbitmq":
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			err := pubsub.ServeRabbitMQConsumer(shutdownctx)
-			if err != nil {
+			if err := consumer.ServeRabbitMQConsumer(shutdownctx); err != nil {
 				serverErrs <- err
+				shutdownSig <- os.Interrupt
 			}
 		}()
 	case "consumer-kafka":
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			err := pubsub.ServeKafkaConsumer(shutdownctx)
-			if err != nil {
+			if err := consumer.ServeKafkaConsumer(shutdownctx); err != nil {
 				serverErrs <- err
+				shutdownSig <- os.Interrupt
 			}
 		}()
 	default:
@@ -105,7 +107,7 @@ func main() {
 	cancel()
 	log.Println("sending shutdown context to dependency...")
 
-	// Wait for shutdown
+	// wait for dependency shutdown
 	shutdownDone := make(chan struct{})
 	go func() {
 		wg.Wait()
@@ -126,7 +128,6 @@ func main() {
 	case err := <-serverErrs:
 		if err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Printf("server error: %v", err)
-			wg.Done()
 		}
 	default:
 	}

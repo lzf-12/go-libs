@@ -5,21 +5,29 @@ import (
 	"log"
 	"time"
 
-	"github.com/lzf-12/go-example-collections/internal/api/pubsub/handler"
-	"github.com/lzf-12/go-example-collections/internal/api/pubsub/model"
+	"github.com/lzf-12/go-example-collections/internal/config"
+	"github.com/lzf-12/go-example-collections/internal/consumer/handler"
+	"github.com/lzf-12/go-example-collections/internal/consumer/model"
 	"github.com/lzf-12/go-example-collections/msgbroker/adapter/rabbitmq"
 	"github.com/lzf-12/go-example-collections/msgbroker/retry"
 )
 
-func InitRabbitMQConsumer(ctx context.Context) {
+func InitRabbitMQConsumer(ctx context.Context) error {
+
+	cfg, err := config.LoadConfig(".env")
+	if err != nil {
+		log.Printf("load config failed: %v", err)
+		return err
+	}
 
 	opts := rabbitmq.RabbitMQOpts{
-		AmqpString: "amqp://guest:guest@localhost:5672/",
+		AmqpString: cfg.RabbitMQAmqpString,
 	}
 
 	rmq, err := rabbitmq.NewRabbitMQBroker(opts)
 	if err != nil {
-		log.Fatalf("rabbitMQ initialize connection failed: %v", err)
+		log.Printf("rabbitMQ initialize connection failed: %v", err)
+		return err
 	}
 
 	consumerCfg := rabbitmq.ConsumerCfg{
@@ -31,13 +39,14 @@ func InitRabbitMQConsumer(ctx context.Context) {
 			Multiplier:      2,
 			MaxInterval:     10 * time.Second,
 		},
-		DLQExchange:   "default.dlx",
-		DLQRoutingKey: "default.dlq",
+		DLQExchange:   cfg.RabbitMQDefaultDlx,
+		DLQRoutingKey: cfg.RabbitMQDefaultDlq,
 	}
 
 	consumer, err := rmq.NewConsumer(consumerCfg)
 	if err != nil {
-		log.Fatalf("consumer initialize failed: %v", err)
+		log.Printf("consumer initialize failed: %v", err)
+		return err
 	}
 
 	mapQueueTopicHandler := []model.QueueTopicHandler{
@@ -72,4 +81,5 @@ func InitRabbitMQConsumer(ctx context.Context) {
 	consumer.Props().Conn.Close() // close connection
 
 	log.Println("rabbitMQ disconnection complete")
+	return nil
 }

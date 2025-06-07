@@ -6,6 +6,7 @@ require (
 	github.com/99designs/gqlgen v0.17.73
 	github.com/gin-gonic/gin v1.10.1
 	github.com/gofiber/fiber/v2 v2.52.8
+	github.com/joho/godotenv v1.5.1
 	github.com/lzf-12/go-example-collections/msgbroker v0.0.0-20250527160035-6d313f248abd
 	github.com/vektah/gqlparser/v2 v2.5.27
 	google.golang.org/grpc v1.72.2

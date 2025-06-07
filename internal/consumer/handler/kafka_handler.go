@@ -8,7 +8,7 @@ import (
 
 	"github.com/lzf-12/go-example-collections/msgbroker/adapter/kafka"
 
-	"github.com/lzf-12/go-example-collections/internal/api/pubsub/model"
+	"github.com/lzf-12/go-example-collections/internal/consumer/model"
 )
 
 func OrderHandlerV2Json(msg kafka.Message) error {

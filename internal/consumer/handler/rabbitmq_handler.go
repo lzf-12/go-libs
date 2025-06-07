@@ -5,7 +5,7 @@ import (
 	"encoding/xml"
 	"log"
 
-	"github.com/lzf-12/go-example-collections/internal/api/pubsub/model"
+	"github.com/lzf-12/go-example-collections/internal/consumer/model"
 )
 
 func HandleCreateOrderV1JSON(msg []byte, _ map[string]interface{}) {
