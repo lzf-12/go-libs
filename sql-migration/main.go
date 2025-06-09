@@ -59,14 +59,14 @@ func main() {
 		log.Printf("current migration version: %d, dirty: %t", version, dirty)
 	}
 
-	log.Println("\n\nTesting UP migrations...\n\n")
+	log.Println("\nTesting UP migrations...")
 	if err := testMigrationsUp(m); err != nil {
 		log.Printf("UP migrations failed: %v", err)
 		forceRollback(m)
 		os.Exit(1)
 	}
 
-	log.Println("\n\nTesting DOWN migrations...\n\n")
+	log.Println("\nTesting DOWN migrations...")
 	if err := testMigrationsDown(m); err != nil {
 		log.Printf("DOWN migrations failed: %v", err)
 		forceRollback(m)
